@@ -1,41 +1,43 @@
-import { MMKV } from "react-native-mmkv";
-
-const storage = new MMKV({ id: "jansapp-storage" });
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const appStorage = {
-  getString(key: string): string | undefined {
-    return storage.getString(key);
+  async getString(key: string): Promise<string | undefined> {
+    const value = await AsyncStorage.getItem(key);
+    return value ?? undefined;
   },
 
-  setString(key: string, value: string): void {
-    storage.set(key, value);
+  async setString(key: string, value: string): Promise<void> {
+    await AsyncStorage.setItem(key, value);
   },
 
-  getNumber(key: string): number | undefined {
-    return storage.getNumber(key);
+  async getNumber(key: string): Promise<number | undefined> {
+    const value = await AsyncStorage.getItem(key);
+    return value !== null ? Number(value) : undefined;
   },
 
-  setNumber(key: string, value: number): void {
-    storage.set(key, value);
+  async setNumber(key: string, value: number): Promise<void> {
+    await AsyncStorage.setItem(key, String(value));
   },
 
-  getBoolean(key: string): boolean | undefined {
-    return storage.getBoolean(key);
+  async getBoolean(key: string): Promise<boolean | undefined> {
+    const value = await AsyncStorage.getItem(key);
+    return value !== null ? value === "true" : undefined;
   },
 
-  setBoolean(key: string, value: boolean): void {
-    storage.set(key, value);
+  async setBoolean(key: string, value: boolean): Promise<void> {
+    await AsyncStorage.setItem(key, String(value));
   },
 
-  remove(key: string): void {
-    storage.delete(key);
+  async remove(key: string): Promise<void> {
+    await AsyncStorage.removeItem(key);
   },
 
-  clearAll(): void {
-    storage.clearAll();
+  async clearAll(): Promise<void> {
+    await AsyncStorage.clear();
   },
 
-  getAllKeys(): string[] {
-    return storage.getAllKeys();
+  async getAllKeys(): Promise<string[]> {
+    const keys = await AsyncStorage.getAllKeys();
+    return keys as string[];
   },
 };
