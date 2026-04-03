@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FitnessGoal {
+  weight_loss
+  muscle_gain
+  flexibility
+  cardio
+  general_fitness
+}
+
+enum FitnessLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum Difficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum SubscriptionStatus {
+  active
+  inactive
+  expired
+  cancelled
+}
+
+enum SubscriptionPlan {
+  free
+  monthly
+  yearly
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String
+  fullName       String
+  avatarUrl      String?
+  fitnessGoal    FitnessGoal?
+  fitnessLevel   FitnessLevel?
+  age            Int?
+  heightCm       Float?
+  weightKg       Float?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  refreshTokens  RefreshToken[]
+  subscription   Subscription?
+  payments       Payment[]
+  favorites      Favorite[]
+  workoutLogs    WorkoutLog[]
+  progressEntries ProgressEntry[]
+  dailyLogs      DailyLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  userId    String             @unique
+  plan      SubscriptionPlan   @default(free)
+  status    SubscriptionStatus @default(inactive)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  currency  String   @default("GEL")
+  status    String
+  method    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model WorkoutCategory {
+  id          String   @id @default(uuid())
+  name        String
+  nameKa      String
+  description String?
+  descriptionKa String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  workouts Workout[]
+
+  @@map("workout_categories")
+}
+
+model Workout {
+  id           String     @id @default(uuid())
+  categoryId   String
+  title        String
+  titleKa      String
+  description  String?
+  descriptionKa String?
+  difficulty   Difficulty
+  durationMin  Int
+  caloriesBurn Int
+  imageUrl     String?
+  videoUrl     String?
+  exercises    Json       @default("[]")
+  isFeatured   Boolean    @default(false)
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  category  WorkoutCategory @relation(fields: [categoryId], references: [id])
+  favorites Favorite[]
+  logs      WorkoutLog[]
+
+  @@map("workouts")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  workoutId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workoutId])
+  @@map("favorites")
+}
+
+model WorkoutLog {
+  id           String   @id @default(uuid())
+  userId       String
+  workoutId    String
+  durationMin  Int
+  caloriesBurn Int
+  completedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@map("workout_logs")
+}
+
+model ProgressEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  weightKg  Float?
+  bodyFatPct Float?
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("progress_entries")
+}
+
+model DailyLog {
+  id             String   @id @default(uuid())
+  userId         String
+  date           DateTime @db.Date
+  waterGlasses   Int      @default(0)
+  waterGoal      Int      @default(8)
+  habitsComplete Json     @default("[]")
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_logs")
+}

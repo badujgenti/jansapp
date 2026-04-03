@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jansapp
+      POSTGRES_PASSWORD: jansapp_secret
+      POSTGRES_DB: jansapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://jansapp:jansapp_secret@db:5432/jansapp?schema=public
+      JWT_SECRET: jansapp-jwt-secret-dev
+      JWT_REFRESH_SECRET: jansapp-refresh-secret-dev
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      PORT: 3000
+      NODE_ENV: production
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             npx tsx prisma/seed.ts &&
+             npm start"
+
+volumes:
+  pgdata:
